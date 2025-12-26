@@ -611,7 +611,7 @@ function renderCuspalTable(){
     let view = [...cuspsData].sort((a,b)=>a.bhava-b.bhava);
 
     let html = `
-    <h2>KP Table - 2   KP Cuspal Chart</h2>
+    <h2>KP Cuspal Chart</h2>
     <table>
         <tr>
             <th>Bhava</th>
@@ -954,15 +954,16 @@ function buildTable3(){
         }
 
         html += `
-        <tr>
-            <td><b>${p}</b></td>
-            <td>${sub.length  ? sub.join(",")  : "xx"}</td>
-            <td>${ssl.length  ? ssl.join(",")  : "xx"}</td>
-            <td>${star.length ? star.join(",") : "xx"}</td>
-            <td>${sign.length ? sign.join(",") : "xx"}</td>
-            <td>${placed}</td>
-        </tr>
-        `;
+	<tr>
+    <td><b>${p}</b></td>
+    <td>${sub.length  ? sub.join(",")  : ""}</td>
+    <td>${ssl.length  ? ssl.join(",")  : ""}</td>
+    <td>${star.length ? star.join(",") : ""}</td>
+    <td>${sign.length ? sign.join(",") : ""}</td>
+    <td>${placed}</td>
+	</tr>
+	`;
+
     });
 
     html += `
@@ -989,15 +990,19 @@ anchor.before(wrapper);
 
 
 
+
+
+
 <!-- =========================================================
      PART 5 : KP TABLE-4 (PIVOT ORDER + SORT FIX FINAL)
+     + VISUAL NUMBER HIDE (NO DOM CHANGE)
      ========================================================= -->
 <script>
 /* =========================================================
    HELPER : SORT HOUSE LIST STRING
    ========================================================= */
 function sortHouseString(str){
-    if(!str || str === "xx") return "xx";
+    if(!str || str === "") return "";
     return str
         .split(",")
         .map(Number)
@@ -1052,7 +1057,7 @@ function getPlanetKPLords(p){
 }
 
 /* =========================================================
-   BUILD TABLE-4 (PIVOT ORDERED)  🔥 PATCHED HEADING
+   BUILD TABLE-4 (PIVOT ORDERED)
    ========================================================= */
 function buildTable4(){
 
@@ -1064,7 +1069,7 @@ function buildTable4(){
 
     /* ---------- READ TABLE-3 ---------- */
     window.__T3_CACHE__ = {};
-	let t3 = window.__T3_CACHE__;
+    let t3 = window.__T3_CACHE__;
 
     t3Table.querySelectorAll("tr").forEach((r,i)=>{
         if(i === 0) return;
@@ -1094,6 +1099,24 @@ function buildTable4(){
     let html = `
     <div id="table4">
     <h2>KP Table-4 : Planet → Star → Sub → Sub-Sub</h2>
+
+    <!-- NUMBER VISIBILITY CONTROLS -->
+    <div style="margin:10px 0;">
+        <label style="margin-right:20px;">
+            <input type="checkbox" id="hideStarNums">
+            Hide Star Numbers Column
+        </label>
+
+        <label style="margin-right:20px;">
+            <input type="checkbox" id="hideSSLNums">
+            Hide Sub-Sub Numbers Column
+        </label>
+
+        <label>
+            <input type="checkbox" id="hideSSLRowNums">
+            Hide Sub-Sub Row Numbers
+        </label>
+    </div>
     `;
 
     /* ---------- BUILD PLANET BLOCKS ---------- */
@@ -1140,14 +1163,15 @@ function buildTable4(){
 
         rows.forEach(r=>{
             html += `
-            <tr>
+            <tr class="${r.label === "Sub-Sub" ? "ssl-row" : ""}">
                 <td>${r.label}</td>
                 <td><b>${r.planet}</b></td>
-                <td>${r.data ? r.data.sub  : "xx"}</td>
-                <td>${r.data ? r.data.ssl  : "xx"}</td>
-                <td>${r.data ? r.data.star : "xx"}</td>
-                <td>${r.data ? r.data.sign : "xx"}</td>
-                <td>${r.data ? r.data.place: "xx"}</td>
+				<td class="sub-num">${r.data ? r.data.sub  : ""}</td>
+				<td class="ssl-num row-num">${r.data ? r.data.ssl  : ""}</td>
+				<td class="star-num row-num">${r.data ? r.data.star : ""}</td>
+				<td>${r.data ? r.data.sign : ""}</td>
+				<td>${r.data ? r.data.place: ""}</td>
+
             </tr>
             `;
         });
@@ -1157,8 +1181,47 @@ function buildTable4(){
 
     html += `</div>`;
     const anchor = document.getElementById("kp-fixed-bottom");
-anchor.insertAdjacentHTML("beforebegin", html);
+    anchor.insertAdjacentHTML("beforebegin", html);
 
+    /* ---------- VISUAL ONLY HIDING (SAFE) ---------- */
+    setTimeout(()=>{
+
+        document.getElementById("hideStarNums").onchange = function(){
+            document.querySelectorAll(".star-num").forEach(e=>{
+                e.style.color = this.checked ? "transparent" : "";
+            });
+        };
+
+        document.getElementById("hideSSLNums").onchange = function(){
+            document.querySelectorAll(".ssl-num").forEach(e=>{
+                e.style.color = this.checked ? "transparent" : "";
+            });
+        };
+
+        document.getElementById("hideSSLRowNums").onchange = function(){
+		document.querySelectorAll(".ssl-row td").forEach(cell=>{
+        cell.style.color = this.checked ? "transparent" : "";
+    });
+};
+
+
+		/* ---------- DEFAULT CHECKED STATE ---------- */
+		const starChk = document.getElementById("hideStarNums");
+		const sslRowChk = document.getElementById("hideSSLRowNums");
+
+		if(starChk){
+		starChk.checked = true;
+		starChk.onchange();
+}
+
+if(sslRowChk){
+    sslRowChk.checked = true;
+    sslRowChk.onchange();
+}
+
+
+
+    },0);
 }
 
 /* =========================================================
@@ -1187,8 +1250,6 @@ anchor.insertAdjacentHTML("beforebegin", html);
 
 
 
-
-
 <!-- =========================================================
      PART 6 : EFFECTIVE LINKS TABLE
      (HARD-ANCHORED — NEVER MOVES)
@@ -1199,7 +1260,7 @@ anchor.insertAdjacentHTML("beforebegin", html);
    HELPERS
    ========================================================= */
 function nums(str){
-    if(!str || str === "xx") return [];
+    if(!str || str === "") return [];
     return str.split(",").map(Number).filter(n=>n>=1 && n<=12);
 }
 
@@ -1238,7 +1299,7 @@ function initTable5Shell(){
 
     root.innerHTML = `
     <div id="table5-shell" style="margin-top:40px;">
-        <h2>KP Table - 5  Effective Links Table</h2>
+        <h2>Effective Links Table</h2>
 
         <div style="margin-bottom:10px;">
             <label style="margin-right:20px;">
