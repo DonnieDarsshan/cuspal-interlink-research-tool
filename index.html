@@ -611,7 +611,7 @@ function renderCuspalTable(){
     let view = [...cuspsData].sort((a,b)=>a.bhava-b.bhava);
 
     let html = `
-    <h2>KP Cuspal Chart</h2>
+    <h2>Table-2 Cuspal Interlink Chart</h2>
     <table>
         <tr>
             <th>Bhava</th>
@@ -670,7 +670,7 @@ function renderCuspalTable(){
    UI : PIVOT + HOUSE MODE
    ========================================================= */
 document.body.insertAdjacentHTML("beforeend", `
-<h2>KP Pivot & House Mode</h2>
+<h2>Pivot & House Mode</h2>
 
 <select id="pivotSelect">
     <option value="Lagna">Lagna</option>
@@ -883,7 +883,7 @@ function buildTable3(){
 
     let html = `
     <div id="table3">
-    <h2>KP Table-3 : Planetary House Significations (Pivot Based)</h2>
+    <h2>Table-3 : Planetary House Significations (Pivot Based)</h2>
     <table>
         <tr>
             <th>Planet</th>
@@ -910,8 +910,8 @@ function buildTable3(){
             if(c.signLord === p) sign.push(h);
         });
 
-        /* ---------- RAHU / KETU SIGN-LORD DISPOSITOR ONLY ---------- */
-        if((p === "Rahu" || p === "Ketu") && sign.length === 0){
+        /* ---------- RAHU / KETU SIGN-LORD DISPOSITOR (ALWAYS RECALC) ---------- */
+			if(p === "Rahu" || p === "Ketu"){
 
             let signPlaced =
                 document.getElementById(p+"_sign").value;
@@ -928,14 +928,23 @@ function buildTable3(){
                     }
                 });
 
-                /* also add dispositor's own placement */
-                let dispPlacement =
-                    rotateHouse(
-                        getPlanetHouse(dispositor),
-                        pivotHouse
-                    );
+               /* also add dispositor's own placement (RETRO AWARE) */
+			let dispPlacement =
+				rotateHouse(
+					getPlanetHouse(dispositor),
+					pivotHouse
+				);
 
-                sign.push(dispPlacement);
+				if(document.getElementById("retroMode")?.checked){
+					dispPlacement = applyRetroPlacement(dispPlacement);
+				}
+
+				/* remove any old placement first */
+				sign = sign.filter(h => h !== dispPlacement);
+
+				sign.push(dispPlacement);
+
+
             }
         }
 
@@ -1098,7 +1107,7 @@ function buildTable4(){
 
     let html = `
     <div id="table4">
-    <h2>KP Table-4 : Planet → Star → Sub → Sub-Sub</h2>
+    <h2>Table-4 : Planet → Star → Sub → Sub-Sub</h2>
 
     <!-- NUMBER VISIBILITY CONTROLS -->
     <div style="margin:10px 0;">
@@ -1299,7 +1308,7 @@ function initTable5Shell(){
 
     root.innerHTML = `
     <div id="table5-shell" style="margin-top:40px;">
-        <h2>Effective Links Table</h2>
+        <h2>Table-5 Effective Links Table</h2>
 
         <div style="margin-bottom:10px;">
             <label style="margin-right:20px;">
@@ -1424,6 +1433,216 @@ function buildTable5(){
     };
 })();
 </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- =========================================================
+     PART 7 : KP TABLE-6 (FINAL STABLE)
+     ========================================================= -->
+<script>
+/* =========================================================
+   ASPECT RULES
+   ========================================================= */
+const aspectRules = {
+    Surya:[7], Chandra:[7], Budha:[7], Venus:[7],
+    Mangala:[4,7,8],
+    Rahu:[5,7,9], Ketu:[5,7,9],
+    Jupiter:[5,7,9],
+    Saturn:[3,7,10]
+};
+
+/* =========================================================
+   UTILITIES
+   ========================================================= */
+function uSort(a){
+    return [...new Set(a.map(Number))].sort((x,y)=>x-y);
+}
+
+function getAspects(h,p){
+    return (aspectRules[p]||[]).map(d=>{
+        let x=h+d-1; while(x>12)x-=12; return x;
+    });
+}
+
+/* =========================================================
+   SIGN LORD HOUSES (RAHU/KETU DISPOSITOR LOGIC)
+   ========================================================= */
+function getSignLordHouses6(p){
+
+    let out=[];
+
+    cuspsData.forEach(c=>{
+        if(c.signLord===p){
+            out.push(rotateHouse(c.bhava,getPivotHouse()));
+        }
+    });
+
+    if((p==="Rahu"||p==="Ketu") && out.length===0){
+        let s=document.getElementById(p+"_sign").value;
+        let disp=signLords[s];
+        if(disp){
+            cuspsData.forEach(c=>{
+                if(c.signLord===disp){
+                    out.push(rotateHouse(c.bhava,getPivotHouse()));
+                }
+            });
+            let ph=rotateHouse(getPlanetHouse(disp),getPivotHouse());
+            if(document.getElementById("retroMode")?.checked){
+                ph=applyRetroPlacement(ph);
+            }
+            out.push(ph);
+        }
+    }
+    return uSort(out);
+}
+
+/* =========================================================
+   BUILD TABLE-6
+   ========================================================= */
+function buildTable6(){
+
+    document.getElementById("table6")?.remove();
+    if(!cuspsData.length) return;
+
+    let pivot=document.getElementById("pivotSelect")?.value;
+    let order=[...planets];
+
+    if(pivot && pivot!=="Lagna"){
+        let i=order.indexOf(pivot);
+        if(i!==-1) order=order.slice(i).concat(order.slice(0,i));
+    }
+
+    let html=`
+    <div id="table6" style="margin-top:40px;">
+    <h2>Table-6 : Sign • Placement • Aspect Synthesis</h2>
+
+    <div style="margin-bottom:12px;">
+        <label style="margin-right:20px;">
+            <input type="checkbox" id="t6_ignoreSOS" checked>
+            Ignore Star of Sub
+        </label>
+        <label>
+            <input type="checkbox" id="t6_ignoreSOSS" checked>
+            Ignore Star of Sub-Sub
+        </label>
+    </div>
+    `;
+
+    order.forEach(p=>{
+
+        let kp=getPlanetKPLords(p);
+        if(!kp) return;
+
+        let chain=[
+            {k:"planet",l:"Planet",p:p},
+            {k:"star",l:"Star Lord",p:kp.star},
+            {k:"sub",l:"Sub Lord",p:kp.sub},
+            {k:"sos",l:"Star of Sub",p:getPlanetKPLords(kp.sub)?.star},
+            {k:"ssl",l:"Sub-Sub Lord",p:kp.ssl},
+            {k:"sossl",l:"Star of Sub-Sub",p:getPlanetKPLords(kp.ssl)?.star}
+        ];
+
+        html+=`
+        <table style="margin-bottom:24px;">
+        <tr>
+            <th colspan="7" style="font-size:20px;font-weight:700;
+            color:#ff9f1c;background:linear-gradient(180deg,#2a0f0f,#140707);
+            padding:12px;border-bottom:2px solid #a86b17;">${p}</th>
+        </tr>
+        <tr>
+            <th>Entity</th><th>Planet</th><th>Sign Lord</th>
+            <th>Placed</th><th>Final</th><th>Aspects</th><th>Summation</th>
+        </tr>
+        `;
+
+        chain.forEach(r=>{
+            if(!r.p) return;
+
+            let signH=getSignLordHouses6(r.p);
+
+            let placed=rotateHouse(getPlanetHouse(r.p),getPivotHouse());
+            if(document.getElementById("retroMode")?.checked){
+                placed=applyRetroPlacement(placed);
+            }
+
+            let fin=uSort([...signH,placed]);
+            let asp=uSort(getAspects(placed,r.p));
+            let sum=uSort([...fin,...asp]);
+
+            html+=`
+            <tr class="t6row ${r.k}">
+                <td>${r.l}</td>
+                <td>${r.p}</td>
+                <td>${signH.join(",")}</td>
+                <td>${placed}</td>
+                <td>${fin.join(",")}</td>
+                <td>${asp.join(",")}</td>
+                <td>${sum.join(",")}</td>
+            </tr>`;
+        });
+
+        html+=`</table>`;
+    });
+
+    html+=`</div>`;
+    document.getElementById("table5-shell")
+        ?.insertAdjacentHTML("afterend",html);
+
+    /* ---------- IGNORE HANDLERS ---------- */
+    function applyIgnore(){
+        let igSOS=document.getElementById("t6_ignoreSOS").checked;
+        let igSOSS=document.getElementById("t6_ignoreSOSS").checked;
+
+        document.querySelectorAll(".sos").forEach(r=>{
+            r.querySelectorAll("td").forEach(td=>{
+                td.textContent=igSOS?"":td.dataset?.orig||td.textContent;
+            });
+        });
+        document.querySelectorAll(".sossl").forEach(r=>{
+            r.querySelectorAll("td").forEach(td=>{
+                td.textContent=igSOSS?"":td.dataset?.orig||td.textContent;
+            });
+        });
+    }
+
+    document.querySelectorAll("#table6 td").forEach(td=>{
+        td.dataset.orig=td.textContent;
+    });
+
+    document.getElementById("t6_ignoreSOS").onchange=applyIgnore;
+    document.getElementById("t6_ignoreSOSS").onchange=applyIgnore;
+
+    applyIgnore(); /* default apply */
+}
+
+/* =========================================================
+   SAFE AUTO-CHAIN
+   ========================================================= */
+(function(){
+    const _orig=buildTable5;
+    buildTable5=function(){
+        _orig();
+        buildTable6();
+    };
+})();
+</script>
+
+
+
+
+
+
+
 
 
 
