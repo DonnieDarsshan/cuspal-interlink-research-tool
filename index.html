@@ -164,8 +164,19 @@ hr{
 }
 
 
+
+
+
 </style>
 
+<style>
+/* TABLE-1 HEADING SIZE BALANCE */
+#inputTable th{
+    font-size:15.5px;
+    font-weight:800;
+    letter-spacing:0.6px;
+}
+</style>
 
 
 
@@ -204,6 +215,22 @@ Manual Cusps (unchecked = Equal cusps from Lagna)
 </label>
 
 <button onclick="autoFillSigns()">Auto Fill Signs (From Lagna)</button>
+
+<h3 style="
+    margin-top:10px;
+    margin-bottom:10px;
+    text-align:center;
+    color:#ff9f1c;
+    font-weight:900;
+    letter-spacing:3.2px;
+    font-size:33px;
+">
+CUSP DATA &amp; PLANETS DATA INPUT TABLE-1
+</h3>
+
+
+
+
 
 <table id="inputTable">
 <tr>
@@ -1556,8 +1583,15 @@ function getPivotHouse(){
 const __buildCuspalChart = buildCuspalChart;
 buildCuspalChart = function(){
     __buildCuspalChart();
+
+    /* existing chain */
     if(typeof buildTable3 === "function"){
         buildTable3();
+    }
+
+    /* 🔥 ADD THIS LINE */
+    if(typeof buildPivotCuspalTable === "function"){
+        buildPivotCuspalTable();
     }
 };
 
@@ -1572,9 +1606,38 @@ buildCuspalChart = function(){
 
 
 
+<script>
+/* =========================================================
+   AUTO REFRESH – NEW PIVOT CUSP TABLE ONLY
+   ========================================================= */
+document.getElementById("pivotSelect")?.addEventListener("change", ()=>{
+    buildPivotCuspalTable();
+});
+
+document.getElementById("vedicMode")?.addEventListener("change", ()=>{
+    buildPivotCuspalTable();
+});
+
+document.getElementById("retroMode")?.addEventListener("change", ()=>{
+    buildPivotCuspalTable();
+});
+</script>
 
 
 
+
+
+
+<script>
+/* =========================================================
+   INITIAL DRAW FIX – SHOW TABLE-X FOR DEFAULT LAGNA
+   ========================================================= */
+document.addEventListener("DOMContentLoaded", ()=>{
+    if(typeof buildPivotCuspalTable === "function"){
+        buildPivotCuspalTable();
+    }
+});
+</script>
 
 
 
@@ -1616,7 +1679,7 @@ function buildTable3(){
 
     let html = `
     <div id="table3">
-    <h2>Table-3 : Planetary House Significations (Pivot Based)</h2>
+    <h2>Table-4 : Planetary House Significations (Pivot Based)</h2>
     <table>
         <tr>
             <th>Planet</th>
@@ -1733,9 +1796,72 @@ anchor.before(wrapper);
 
 
 
+<script>
+/* =========================================================
+   TABLE-X : PIVOT BASED CUSPAL INTERLINK (DYNAMIC)
+   (SAFE – NEW TABLE ONLY)
+   ========================================================= */
+function buildPivotCuspalTable(){
+
+    if(!cuspsData || cuspsData.length === 0) return;
+
+    /* ---------- BASE BHAVA ORDER ---------- */
+    let base = [...cuspsData].sort((a,b)=>a.bhava-b.bhava);
+
+    /* ---------- GET PIVOT HOUSE ---------- */
+    let pivotHouse = getPivotHouse();   // already exists in your system
+
+    /* ---------- ROTATE DATA ---------- */
+    let rotated = [];
+    let start = base.findIndex(c=>c.bhava===pivotHouse);
+    if(start < 0) start = 0;
+
+    for(let i=0;i<12;i++){
+        rotated.push(base[(start+i)%12]);
+    }
+
+    /* ---------- BUILD TABLE ---------- */
+    let html = `
+    <h2>Table-3 : Pivot Based Cuspal Interlink (Dynamic)</h2>
+    <table>
+        <tr>
+            <th>Bhava</th>
+            <th>Sign</th>
+            <th>Degree</th>
+            <th>Sign Lord</th>
+            <th>Star Lord</th>
+            <th>Sub Lord</th>
+            <th>Sub-Sub Lord</th>
+        </tr>
+    `;
+
+    rotated.forEach((c,i)=>{
+        html += `
+        <tr>
+            <td>${i+1}</td>
+            <td>${c.sign}</td>
+            <td>
+                ${String(c.deg).padStart(2,"0")}°
+                ${String(c.min).padStart(2,"0")}'
+                ${String(c.sec).padStart(2,"0")}"
+            </td>
+            <td>${c.signLord}</td>
+            <td>${c.starLord}</td>
+            <td>${c.subLord}</td>
+            <td>${c.sslLord}</td>
+        </tr>
+        `;
+    });
+
+    html += `</table>`;
+
+    document.getElementById("pivotCuspalTable").innerHTML = html;
+}
+</script>
 
 
 
+<div id="pivotCuspalTable"></div>
 
 
 
@@ -1835,7 +1961,7 @@ function buildTable4(){
 
     let html = `
     <div id="table4">
-    <h2>Table-4 : Planet → Star → Sub → Sub-Sub</h2>
+    <h2>Table-5 : Planet → Star → Sub → Sub-Sub</h2>
 
     <div style="margin:10px 0;">
         <label style="margin-right:20px;">
@@ -2029,7 +2155,7 @@ function initTable5Shell(){
 
     root.innerHTML = `
     <div id="table5-shell" style="margin-top:40px;">
-        <h2>Table-5 Effective Links Table</h2>
+        <h2>Table-6 Effective Links Table</h2>
 
         <div style="margin-bottom:10px;">
             <label style="margin-right:20px;">
@@ -2265,7 +2391,7 @@ function buildTable6(){
 
     let html=`
     <div id="table6" style="margin-top:40px;">
-    <h2>Table-6 : Sign • Placement • Aspect Synthesis</h2>
+    <h2>Table-7 : Sign • Placement • Aspect Synthesis</h2>
 
     <div style="margin-bottom:12px;">
         <label style="margin-right:20px;">
