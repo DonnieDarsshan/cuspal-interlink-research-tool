@@ -248,6 +248,11 @@ Manual Cusps (unchecked = Equal cusps from Lagna)
 
 <button onclick="autoFillSigns()">Auto Fill Signs (From Lagna)</button>
 
+<label style="margin-left:14px;font-weight:700;">
+    <input type="checkbox" id="hideInputTable" checked>
+    Hide Input Table
+</label>
+
 <div id="table1"></div>
 
 <h3 style="
@@ -1112,6 +1117,28 @@ manualMode.onchange();
 
 
 /* =========================================================
+   INPUT TABLE VISIBILITY TOGGLE (DEFAULT HIDDEN)
+   ========================================================= */
+
+const hideInputTable = document.getElementById("hideInputTable");
+const inputTableEl  = document.getElementById("inputTable");
+
+/* toggle visibility */
+function updateInputTableVisibility(){
+    inputTableEl.classList.toggle("hidden", hideInputTable.checked);
+}
+
+/* bind checkbox */
+hideInputTable.onchange = updateInputTableVisibility;
+
+/* apply default state (ON = hidden) */
+updateInputTableVisibility();
+
+
+
+
+
+/* =========================================================
    SAVE JSON (UPDATED – WITH VIMSHOTTARI EVENTS)
    ========================================================= */
 function saveJSON(){
@@ -1632,14 +1659,16 @@ document.addEventListener("DOMContentLoaded", () => {
 /* =========================================================
    UI : PIVOT + HOUSE MODE
    ========================================================= */
+
+
+
+
 document.body.insertAdjacentHTML("beforeend", `
+
 <h2 id="pivotMode">Pivot & House Mode</h2>
-
-
 
 <select id="pivotSelect">
     <option value="Lagna">Lagna</option>
-
     <option value="Surya">Surya</option>
     <option value="Chandra">Chandra</option>
     <option value="Mangala">Mangala</option>
@@ -1663,7 +1692,39 @@ document.body.insertAdjacentHTML("beforeend", `
     <option value="CSL12">12 CSL</option>
 </select>
 
-<label style="margin-left:15px;">
+
+<label style="margin-left:15px;font-weight:800;color:#facc15;">
+    Tara :
+    <select id="taraSelect">
+        <option value="PIVOT_STAR" selected>Pivots Starlord</option>
+
+        <option value="Surya">Surya</option>
+        <option value="Chandra">Chandra</option>
+        <option value="Mangala">Mangala</option>
+        <option value="Rahu">Rahu</option>
+        <option value="Jupiter">Jupiter</option>
+        <option value="Saturn">Saturn</option>
+        <option value="Budha">Budha</option>
+        <option value="Ketu">Ketu</option>
+        <option value="Venus">Venus</option>
+
+        <option value="CSL1">1 CSL Starlord</option>
+        <option value="CSL2">2 CSL Starlord</option>
+        <option value="CSL3">3 CSL Starlord</option>
+        <option value="CSL4">4 CSL Starlord</option>
+        <option value="CSL5">5 CSL Starlord</option>
+        <option value="CSL6">6 CSL Starlord</option>
+        <option value="CSL7">7 CSL Starlord</option>
+        <option value="CSL8">8 CSL Starlord</option>
+        <option value="CSL9">9 CSL Starlord</option>
+        <option value="CSL10">10 CSL Starlord</option>
+        <option value="CSL11">11 CSL Starlord</option>
+        <option value="CSL12">12 CSL Starlord</option>
+    </select>
+</label>
+
+
+<label style="margin-left:15px;font-weight:700;color:#facc15;">
     <input type="checkbox" id="vedicMode" checked>
     Vedic House (±15°)
 </label>
@@ -1673,48 +1734,13 @@ document.body.insertAdjacentHTML("beforeend", `
     Retro
 </label>
 
-
-
-
 <label style="margin-left:15px;">
     <input type="checkbox" id="trueNodeModeKP" checked>
     True Node
 </label>
 
-
-
-
-<select id="taraSelect" style="margin-left:15px;">
-    <option value="PIVOT_STAR" selected>Pivots Starlord</option>
-
-    <option value="Surya">Surya</option>
-    <option value="Chandra">Chandra</option>
-    <option value="Mangala">Mangala</option>
-    <option value="Rahu">Rahu</option>
-    <option value="Jupiter">Jupiter</option>
-    <option value="Saturn">Saturn</option>
-    <option value="Budha">Budha</option>
-    <option value="Ketu">Ketu</option>
-    <option value="Venus">Venus</option>
-
-    <option value="CSL1">1 CSL Starlord</option>
-    <option value="CSL2">2 CSL Starlord</option>
-    <option value="CSL3">3 CSL Starlord</option>
-    <option value="CSL4">4 CSL Starlord</option>
-    <option value="CSL5">5 CSL Starlord</option>
-    <option value="CSL6">6 CSL Starlord</option>
-    <option value="CSL7">7 CSL Starlord</option>
-    <option value="CSL8">8 CSL Starlord</option>
-    <option value="CSL9">9 CSL Starlord</option>
-    <option value="CSL10">10 CSL Starlord</option>
-    <option value="CSL11">11 CSL Starlord</option>
-    <option value="CSL12">12 CSL Starlord</option>
-</select>
-
-
-
-
 `);
+
 
 /* =========================================================
    ROTATE HOUSE FROM PIVOT (UNCHANGED)
@@ -1807,6 +1833,51 @@ function getPlanetHouse(p){
         ? getPlanetHouseVedic(p)
         : getPlanetHouseKP(p);
 }
+
+
+
+/* =========================================================
+   TABLE-8 HOUSE RESOLVER (SYNC WITH CHART)
+   ========================================================= */
+function getPlanetHouse_T8(p){
+
+    /* KP MODE (0°) */
+    if(document.getElementById("kpModeK")?.checked){
+        return getPlanetHouseKP(p);
+    }
+
+    /* VEDIC MODE (±15°) */
+    if(document.getElementById("vedicModeK")?.checked){
+        return getPlanetHouseVedic(p);
+    }
+
+    /* FALLBACK (KP) */
+    return getPlanetHouseKP(p);
+}
+
+
+
+
+
+
+/* =========================================================
+   GLOBAL HOUSE RESOLVER (TABLES ONLY)
+   MASTER = #vedicMode
+   ========================================================= */
+function getPlanetHouse_GLOBAL(p){
+
+    /* VEDIC HOUSE (±15°) — DEFAULT ON */
+    if(document.getElementById("vedicMode")?.checked){
+        return getPlanetHouseVedic(p);
+    }
+
+    /* KP HOUSE (0°) */
+    return getPlanetHouseKP(p);
+}
+
+
+
+
 
 /* =========================================================
    GET PIVOT HOUSE (UNCHANGED)
@@ -1950,6 +2021,30 @@ function buildTable3(){
 	<div id="anchor-table4"></div>
 
     <h2>Table-4 : Planetary House Significations (Pivot Based)</h2>
+	
+	<div id="pivotMirrorBox" style="
+    margin:12px 0 18px;
+    padding:10px;
+    border:1px solid #a86b17;
+    background:#120606;
+    box-shadow:0 0 12px rgba(255,159,28,.35);
+">
+
+    <label style="margin-right:12px;">
+        Pivot :
+        <select id="pivotSelect_mirror"></select>
+    </label>
+
+    
+
+    <label style="font-weight:700;color:#facc15;">
+        <input type="checkbox" id="vedicMode_mirror">
+        Vedic House (±15°)
+    </label>
+
+</div>
+
+	
     <table>
         <tr>
             <th>Planet</th>
@@ -2020,13 +2115,17 @@ function buildTable3(){
         star = [...new Set(star.map(Number))].sort((a,b)=>a-b);
         sign = [...new Set(sign.map(Number))].sort((a,b)=>a-b);
 
-        /* ---------- PLACEMENT (UNCHANGED) ---------- */
-        let placed =
-            rotateHouse(getPlanetHouse(p), pivotHouse);
+       /* ---------- PLACEMENT (KP / VEDIC SYNCED FIX) ---------- */
+		let placed =
+		rotateHouse(
+			getPlanetHouse_GLOBAL(p),   // 🔒 MASTER MODE
+			pivotHouse
+		);
 
-        if(document.getElementById("retroMode")?.checked){
-            placed = applyRetroPlacement(placed);
-        }
+
+		if(document.getElementById("retroMode")?.checked){
+			placed = applyRetroPlacement(placed);
+		}
 
         html += `
 	<tr>
@@ -2051,6 +2150,63 @@ function buildTable3(){
 const wrapper = document.createElement("div");
 wrapper.innerHTML = html;
 anchor.before(wrapper);
+
+
+
+/* =========================================================
+   MIRROR CONTROLS — SAFE SYNC (PIVOT + VEDIC ONLY)
+   ========================================================= */
+(function(){
+
+    const p  = document.getElementById("pivotSelect");
+    const pm = document.getElementById("pivotSelect_mirror");
+
+    const v  = document.getElementById("vedicMode");
+    const vm = document.getElementById("vedicMode_mirror");
+
+    if(!p || !pm || !v || !vm) return;
+
+    /* ---------- CLONE OPTIONS ---------- */
+    pm.innerHTML = p.innerHTML;
+
+    /* ---------- INITIAL STATE ---------- */
+    pm.value = p.value;
+    vm.checked = v.checked;
+
+    /* ---------- MASTER → MIRROR ---------- */
+    p.addEventListener("change", () => pm.value = p.value);
+    v.addEventListener("change", () => vm.checked = v.checked);
+
+    /* ---------- MIRROR → MASTER ---------- */
+    pm.addEventListener("change", () => {
+        p.value = pm.value;
+        p.dispatchEvent(new Event("change"));
+    });
+
+    vm.addEventListener("change", () => {
+        v.checked = vm.checked;
+        v.dispatchEvent(new Event("change"));
+    });
+
+})();
+
+
+
+
+
+
+/* sync mirror with master */
+setTimeout(() => {
+    const master = document.getElementById("vedicMode");
+    document
+      .querySelectorAll("#table3 input[type='checkbox']")
+      .forEach(cb => cb.checked = master.checked);
+}, 0);
+
+
+
+
+
 
 }
 </script>
@@ -2693,6 +2849,26 @@ function buildTable4(){
 
 	<h2>Table-5 : Planet → Star → Sub → Sub-Sub</h2>
 
+		<div style="
+    margin:10px 0 14px;
+    padding:10px;
+    border:1px solid #a86b17;
+    background:#120606;
+    box-shadow:0 0 12px rgba(255,159,28,.35);
+">
+
+    <label style="font-weight:800;color:#facc15;margin-right:12px;">
+        Tara :
+    </label>
+
+    <select id="taraSelect_mirror"></select>
+
+
+</div>
+
+
+
+
     `;
 
 
@@ -2806,7 +2982,60 @@ function buildTable4(){
     html+=`</div>`;
     document.getElementById("kp-fixed-bottom")
         .insertAdjacentHTML("beforebegin",html);
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		/* =========================================================
+   TARA MIRROR BINDING — TABLE 5 (CORRECT TIMING)
+   ========================================================= */
+(function(){
+
+    const t  = document.getElementById("taraSelect");          // MASTER
+    const tm = document.getElementById("taraSelect_mirror");   // TABLE-5
+
+    if(!t || !tm) return;
+
+    /* clone options fresh every rebuild */
+    tm.innerHTML = t.innerHTML;
+    tm.value = t.value;
+
+    /* MASTER → MIRROR */
+    t.onchange = () => {
+        tm.value = t.value;
+        buildTable4();
+        if(typeof buildTable6 === "function") buildTable6();
+    };
+
+    /* MIRROR → MASTER */
+    tm.onchange = () => {
+        t.value = tm.value;
+        t.dispatchEvent(new Event("change"));
+    };
+
+})();
+
+
+		
+		
+		
+		
+		
+		
+		
 }
+
+
+
+
+
+
 
 /* =========================================================
    SAFE AUTO REFRESH (UNCHANGED)
@@ -3419,9 +3648,11 @@ function buildTable6(){
             let signH = getSignLordHouses6(r.p);
 
             let placed = rotateHouse(
-                getPlanetHouse(r.p),
-                getPivotHouse()
-            );
+			getPlanetHouse_GLOBAL(r.p),   // 🔒 MASTER MODE
+			getPivotHouse()
+		);
+
+
 
             if(document.getElementById("retroMode")?.checked){
                 placed = applyRetroPlacement(placed);
@@ -3487,6 +3718,30 @@ function buildTable6(){
         buildTable6();
     };
 })();
+
+
+
+
+/* =========================================================
+   FORCE TABLE-8 REFRESH ON CHART MODE CHANGE
+   ========================================================= */
+["kpModeK","vedicModeK","retroModeK"].forEach(id=>{
+    document.getElementById(id)
+      ?.addEventListener("change", ()=>{
+          if(typeof buildTable6 === "function"){
+              buildTable6();
+          }
+      });
+});
+
+
+document.getElementById("vedicMode")
+  ?.addEventListener("change", ()=>{
+      if(typeof buildTable3 === "function") buildTable3();
+      if(typeof buildTable6 === "function") buildTable6();
+  });
+
+
 </script>
 
 
