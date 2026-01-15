@@ -253,6 +253,13 @@ Manual Cusps (unchecked = Equal cusps from Lagna)
     Hide Input Table
 </label>
 
+
+<label style="margin-left:18px;font-weight:700;">
+    <input type="checkbox" id="kpLevelTheme" checked>
+    Level Theme
+</label>
+
+
 <div id="table1"></div>
 
 <h3 style="
@@ -341,6 +348,12 @@ function lockBaseDateTime(){
     /* OPTIONAL: only store if both exist */
     if(d && t){
         BASE_EPOCH = new Date(d + "T" + t);
+
+		        /* 🔥 SYNTHETIC BASE MUST START HERE */
+        BASE_MASTER_DATETIME = new Date(d + "T" + t);
+        SHIFT_SECONDS = 0;
+
+
 
         /* lock only if filled */
         document.getElementById("baseDate").disabled = true;
@@ -715,6 +728,44 @@ drawD1();
     background:linear-gradient(180deg,#2a0f0f,#140707);
     color:#ffd27d;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   KP LEVEL COLOR THEME (TABLE 5 & 8)
+   ========================================================= */
+
+body[data-kp-theme="on"] .lvl-planet {
+    background: rgba(220,38,38,0.18) !important; /* RED */
+}
+
+body[data-kp-theme="on"] .lvl-sub {
+    background: rgba(37,99,235,0.18) !important; /* BLUE */
+}
+
+body[data-kp-theme="on"] .lvl-subsub {
+    background: rgba(22,163,74,0.18) !important; /* GREEN */
+}
+
+
+
+
+
+
+
+
+
 </style>
 
 <script>
@@ -1348,6 +1399,29 @@ function fillAllSeconds(){
 
 
 
+<script>
+/* =========================================================
+   KP LEVEL THEME TOGGLE
+   ========================================================= */
+
+const kpThemeToggle = document.getElementById("kpLevelTheme");
+
+function applyKPTheme(){
+    if(kpThemeToggle.checked){
+        document.body.setAttribute("data-kp-theme","on");
+    }else{
+        document.body.removeAttribute("data-kp-theme");
+    }
+}
+
+kpThemeToggle.onchange = applyKPTheme;
+applyKPTheme(); // apply default
+</script>
+
+
+
+
+
 
 
 
@@ -1696,8 +1770,14 @@ document.body.insertAdjacentHTML("beforeend", `
 <label style="margin-left:15px;font-weight:800;color:#facc15;">
     Tara :
     <select id="taraSelect">
-        <option value="PIVOT_STAR" selected>Pivots Starlord</option>
+		<option value="PIVOT_SELF">Pivot Itself</option>
+		<option value="SSL_CHANDRA" selected>SSL of Chandra</option>
+		<option value="SL_CHANDRA">SL of Chandra</option>
+		<option value="NL_CHANDRA">NL of Chandra</option>
 
+		
+		<option value="PIVOT_STAR">Pivots Starlord</option>
+		
         <option value="Surya">Surya</option>
         <option value="Chandra">Chandra</option>
         <option value="Mangala">Mangala</option>
@@ -2486,30 +2566,77 @@ function updateShiftDisplay(){
 /* ============================
    DATE–TIME TOOL (TIME PRIMARY)
    ============================ */
+   
+   
+   
 function captureBaseDateTime(){
-  if(baseDate.value && baseTimeLock.value){
-    BASE_MASTER_DATETIME =
-      new Date(baseDate.value+"T"+baseTimeLock.value);
-    dateCtrl.value = baseDate.value;
-    timeCtrl.value = baseTimeLock.value;
+
+	  if(BASE_MASTER_DATETIME) return;
+
+
+  if(!baseDate.value || !baseTimeLock.value) return;
+
+  BASE_MASTER_DATETIME =
+    new Date(baseDate.value + "T" + baseTimeLock.value);
+
+  /* RESET SHIFT */
+  SHIFT_SECONDS = 0;
+  updateShiftDisplay();
+
+  /* SYNC UI */
+  syncDateTimeTool();
+}
+
+
+
+
+
+
+
+function applyDateTimeChange(){
+
+  if(!BASE_MASTER_DATETIME) return;
+
+  const n = new Date(
+    dateCtrl.value + "T" + timeCtrl.value
+  );
+
+  /* NEW absolute shift from base */
+  const newShift =
+    Math.round((n - BASE_MASTER_DATETIME) / 1000);
+
+  /* 🔥 APPLY ONLY THE DIFFERENCE */
+  const delta = newShift - SHIFT_SECONDS;
+
+  if(delta !== 0){
+    applyShift(delta);
   }
 }
 
-function applyDateTimeChange(){
-  if(!BASE_MASTER_DATETIME)return;
-  let n=new Date(dateCtrl.value+"T"+timeCtrl.value);
-  let diff=(n-BASE_MASTER_DATETIME)/1000;
-  applyShift(diff-SHIFT_SECONDS);
-}
+
+
+
+
+
+
+
+
 
 function syncDateTimeTool(){
-  if(!BASE_MASTER_DATETIME)return;
-  let d=new Date(
-    BASE_MASTER_DATETIME.getTime()+SHIFT_SECONDS*1000
+
+  if(!BASE_MASTER_DATETIME) return;
+
+  const d = new Date(
+    BASE_MASTER_DATETIME.getTime() +
+    SHIFT_SECONDS * 1000
   );
-  dateCtrl.value=d.toISOString().slice(0,10);
-  timeCtrl.value=d.toTimeString().slice(0,8);
+
+  dateCtrl.value = d.toISOString().slice(0,10);
+  timeCtrl.value = d.toTimeString().slice(0,8);
 }
+
+
+
 </script>
 
 <div class="kpShiftBox">
@@ -2538,9 +2665,10 @@ function syncDateTimeTool(){
 
     <!-- RIGHT : DATE–TIME TOOL -->
     <div class="kpRight">
-      📅 <input type="date" id="dateCtrl" onchange="applyDateTimeChange()">
-      ⏱ <input type="time" id="timeCtrl" step="1"
-               onchange="applyDateTimeChange()">
+      📅 <input type="date" id="dateCtrl" oninput="applyDateTimeChange()">
+	⏱ <input type="time" id="timeCtrl" step="1"
+				   oninput="applyDateTimeChange()">
+
     </div>
 
   </div>
@@ -2548,7 +2676,12 @@ function syncDateTimeTool(){
 
 <script>
 document.querySelector("button[onclick='buildCuspalChart()']")
- ?.addEventListener("click",()=>setTimeout(captureBaseDateTime,0));
+ ?.addEventListener("click",()=>{
+    setTimeout(()=>{
+      captureBaseDateTime();
+      syncDateTimeTool();
+    },0);
+ });
 </script>
 
 
@@ -2675,13 +2808,38 @@ function resolveTaraJanmaPlanet(){
     const sel = tSel.value;
     let janma = null;
 
-    /* ===============================
-       MANUAL SOURCE
-       =============================== */
-    if(sel !== "PIVOT_STAR"){
-        janma = resolveExplicitTaraSource(sel);
-    }
-    else{
+		/* ===============================
+   MANUAL SOURCE
+	   =============================== */
+	if(sel === "PIVOT_SELF"){
+
+		const pivot = document.getElementById("pivotSelect")?.value;
+
+		/* ❌ Lagna or CSL → NO TARA */
+		if(pivot === "Lagna" || pivot.startsWith("CSL")){
+			return null;   // 🔒 EMPTY TARA (INTENTIONAL)
+		}
+
+		/* ✅ Planet pivot */
+		if(planets.includes(pivot)){
+			return pivot;
+		}
+
+		return null;
+		}
+		else if(sel !== "PIVOT_STAR"){
+			janma = resolveExplicitTaraSource(sel);
+		}
+		else{
+
+
+
+
+
+
+
+
+
         /* ===============================
            PIVOT SOURCE
            =============================== */
@@ -2700,7 +2858,8 @@ function resolveTaraJanmaPlanet(){
     if(janma) TARA_LAST_JANMA = janma;
 
     /* fallback safety */
-    return janma || TARA_LAST_JANMA;
+    return janma;
+
 }
 
 
@@ -2722,6 +2881,25 @@ function resolveExplicitTaraSource(sel){
         const c = cuspsData.find(x => x.bhava === n);
         return c ? c.starLord : null;
     }
+
+		    /* ===============================
+       CHANDRA BASED TARA SOURCES
+       =============================== */
+
+    if(sel === "SSL_CHANDRA"){
+        return getPlanetKPLords("Chandra")?.ssl || null;
+    }
+
+    if(sel === "SL_CHANDRA"){
+        return getPlanetKPLords("Chandra")?.sub || null;
+    }
+
+    if(sel === "NL_CHANDRA"){
+        return getPlanetKPLords("Chandra")?.star || null;
+    }
+
+
+
 
     return null;
 }
@@ -2762,9 +2940,8 @@ document.getElementById("pivotSelect")
       /* 🔥 pivot always re-syncs Tara */
       TARA_MANUAL_LOCK = false;
 
-      if(t){
-          t.value = "PIVOT_STAR";
-      }
+     t.value = "SSL_CHANDRA";
+
 
       buildTable4();
 	  if(typeof buildTable6 === "function"){
@@ -2782,6 +2959,9 @@ document.getElementById("pivotSelect")
 
 
 function computeTaraIndex(janma, target){
+
+	if(!janma) return "";
+
 
     if(!janma || !target) return "";
 
@@ -2909,27 +3089,39 @@ function buildTable4(){
         `;
 
         rows.forEach(r=>{
-            html+=`
-            <tr class="${r.label==='Sub Lord'?'sub-row':''}">
-                <td>${r.label}</td>
-                <td><b>${markPlanet(r.planet)}</b></td>
-                <td class="sub-num">${r.data?.sub||""}</td>
-                <td class="ssl-num">${r.data?.ssl||""}</td>
-                <td class="star-num">${r.data?.star||""}</td>
-                <td>${r.data?.sign||""}</td>
-                <td>${r.data?.place||""}</td>
+		
+		
+		
+           html+=`
+			<tr class="${
+				r.label === 'Planet' || r.label === 'Star Lord'
+					? 'lvl-planet'
+					: r.label === 'Sub Lord'
+						? 'lvl-sub'
+						: ''
+			}">
+				<td>${r.label}</td>
+				<td><b>${markPlanet(r.planet)}</b></td>
+				<td class="sub-num">${r.data?.sub||""}</td>
+				<td class="ssl-num">${r.data?.ssl||""}</td>
+				<td class="star-num">${r.data?.star||""}</td>
+				<td>${r.data?.sign||""}</td>
+				<td>${r.data?.place||""}</td>
 				<td>
-				${(() => {
-					const janma = resolveTaraJanmaPlanet();
-					return computeTaraIndex(janma, r.planet);
-				})()}
+					${(() => {
+						const janma = resolveTaraJanmaPlanet();
+						return computeTaraIndex(janma, r.planet);
+					})()}
 				</td>
+			</tr>`;
 
-            </tr>`;
+			
+			
+			
         });
 
         html+=`
-        <tr class="sos-row">
+        <tr class="lvl-sub">
             <td>Star of Sub</td>
             <td><b>${markPlanet(starOfSub||"")}</b></td>
             <td class="sub-num">${t3[starOfSub]?.sub||""}</td>
@@ -2945,7 +3137,7 @@ function buildTable4(){
 			</td>
         </tr>
 
-        <tr class="ssl-row">
+        <tr class="lvl-subsub">
             <td>Sub-Sub Lord</td>
             <td><b>${markPlanet(kp.ssl)}</b></td>
             <td class="sub-num">${t3[kp.ssl]?.sub||""}</td>
@@ -2961,7 +3153,7 @@ function buildTable4(){
 			</td>
         </tr>
 
-        <tr class="sossl-row">
+        <tr class="lvl-subsub">
             <td>Star of Sub-Sub</td>
             <td><b>${markPlanet(starOfSubSub||"")}</b></td>
             <td class="sub-num">${t3[starOfSubSub]?.sub||""}</td>
@@ -3663,7 +3855,13 @@ function buildTable6(){
             let sum = uSort([...fin, ...asp]);
 
             html += `
-            <tr class="t6row ${r.k}">
+            <tr class="t6row ${r.k} ${
+				r.k === "planet" || r.k === "star"
+					? "lvl-planet"
+					: r.k === "sub" || r.k === "sos"
+						? "lvl-sub"
+						: "lvl-subsub"
+			}">
                 <td>${r.l}</td>
                 <td>${r.k === "star" ? r.p : markPlanet(r.p)}</td>
                 <td>${signH.join(",")}</td>
@@ -4154,6 +4352,8 @@ function loadSwissJSON(){
                 baseTimeLock.value = dt.toTimeString().slice(0,8);
                 BASE_EPOCH = null;
                 lockBaseDateTime();
+				    syncDateTimeTool();
+
             }
 
             /* ---------- FORCE MANUAL MODE ---------- */
